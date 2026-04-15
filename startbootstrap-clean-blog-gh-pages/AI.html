@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Wordle Clone</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #121213;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+h1 {
+    margin: 20px;
+    letter-spacing: 2px;
+}
+
+/* GRID */
+#game {
+    display: grid;
+    grid-template-rows: repeat(6, 1fr);
+    gap: 5px;
+    margin-bottom: 20px;
+}
+
+.row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 5px;
+}
+
+.tile {
+    width: 60px;
+    height: 60px;
+    border: 2px solid #3a3a3c;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2rem;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+/* COLORS */
+.correct { background: #538d4e; border: none; }
+.present { background: #b59f3b; border: none; }
+.absent { background: #3a3a3c; border: none; }
+
+/* BUTTON */
+#newGame {
+    margin: 20px;
+    padding: 12px 20px;
+    font-size: 1rem;
+    background: #818384;
+    border: none;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+#newGame:hover {
+    background: #9a9b9c;
+}
+</style>
+</head>
+
+<body>
+
+<h1>WORDLE</h1>
+
+<div id="game"></div>
+<button id="newGame">New Game</button>
+
+<script>
+const WORDS = ["CRANE", "PLANT", "SHINE", "BRAVE", "FLAME", "GRIND"];
+const MAX_ROWS = 6;
+const MAX_COLS = 5;
+
+let WORD = "";
+let currentRow = 0;
+let currentCol = 0;
+let gameOver = false;
+
+const game = document.getElementById("game");
+const newGameBtn = document.getElementById("newGame");
+
+/* CREATE GRID */
+function createGrid() {
+    game.innerHTML = "";
+
+    for (let r = 0; r < MAX_ROWS; r++) {
+        const row = document.createElement("div");
+        row.classList.add("row");
+
+        for (let c = 0; c < MAX_COLS; c++) {
+            const tile = document.createElement("div");
+            tile.classList.add("tile");
+            row.appendChild(tile);
+        }
+
+        game.appendChild(row);
+    }
+}
+
+/* RESET GAME */
+function newGame() {
+    WORD = WORDS[Math.floor(Math.random() * WORDS.length)];
+    currentRow = 0;
+    currentCol = 0;
+    gameOver = false;
+    createGrid();
+}
+
+newGameBtn.addEventListener("click", newGame);
+
+/* KEYBOARD INPUT ONLY */
+document.addEventListener("keydown", (e) => {
+    if (gameOver) return;
+
+    const key = e.key.toUpperCase();
+
+    if (key === "BACKSPACE") {
+        handleBackspace();
+    } 
+    else if (key === "ENTER") {
+        handleEnter();
+    } 
+    else if (/^[A-Z]$/.test(key)) {
+        handleLetter(key);
+    }
+});
+
+function handleLetter(letter) {
+    if (currentCol < MAX_COLS) {
+        const row = game.children[currentRow];
+        const tile = row.children[currentCol];
+        tile.textContent = letter;
+        currentCol++;
+    }
+}
+
+function handleBackspace() {
+    if (currentCol > 0) {
+        currentCol--;
+        const row = game.children[currentRow];
+        const tile = row.children[currentCol];
+        tile.textContent = "";
+    }
+}
+
+function handleEnter() {
+    if (currentCol !== MAX_COLS) return;
+
+    const row = game.children[currentRow];
+    const tiles = row.children;
+
+    let guess = "";
+    for (let i = 0; i < MAX_COLS; i++) {
+        guess += tiles[i].textContent;
+    }
+
+    evaluateGuess(tiles, guess);
+}
+
+function evaluateGuess(tiles, guess) {
+    const letterCount = {};
+
+    for (let l of WORD) {
+        letterCount[l] = (letterCount[l] || 0) + 1;
+    }
+
+    // correct
+    for (let i = 0; i < MAX_COLS; i++) {
+        if (guess[i] === WORD[i]) {
+            tiles[i].classList.add("correct");
+            letterCount[guess[i]]--;
+        }
+    }
+
+    // present / absent
+    for (let i = 0; i < MAX_COLS; i++) {
+        if (tiles[i].classList.contains("correct")) continue;
+
+        if (WORD.includes(guess[i]) && letterCount[guess[i]] > 0) {
+            tiles[i].classList.add("present");
+            letterCount[guess[i]]--;
+        } else {
+            tiles[i].classList.add("absent");
+        }
+    }
+
+    if (guess === WORD) {
+        gameOver = true;
+        setTimeout(() => alert("You Win!"), 100);
+        return;
+    }
+
+    currentRow++;
+    currentCol = 0;
+
+    if (currentRow === MAX_ROWS) {
+        gameOver = true;
+        setTimeout(() => alert("Game Over! Word was " + WORD), 100);
+    }
+}
+
+/* start first game */
+newGame();
+</script>
+
+</body>
+</html>
